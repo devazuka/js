@@ -1,0 +1,5 @@
+- format student code
+- new backend with discord connection
+- update editor and maybe add features for it
+- improve the sessions system a bit
+- dark + light theme 8-)

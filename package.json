@@ -1,1 +1,29 @@
-{ "type": "module" }
+{
+  "type": "module",
+  "scripts": {
+    "start": "./node_modules/.bin/esbuild script.js --bundle --format=esm --servedir=. --outdir=lib",
+    "build": "./node_modules/.bin/esbuild --bundle --format=esm --minify --analyze script.js --outfile=lib/script.js",
+    "lint": "./node_modules/.bin/prettier -w --no-semi --single-quote --trailing-comma all --arrow-parens always --prose-wrap always --print-width 80 quests/*.md"
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "^6.1.0",
+    "@codemirror/commands": "^6.0.1",
+    "@codemirror/lang-javascript": "^6.0.2",
+    "@codemirror/theme-one-dark": "^6.0.0",
+    "@codemirror/view": "^6.1.1",
+    "@uiw/codemirror-theme-github": "^4.11.4",
+    "better-sqlite3": "^7.5.3",
+    "prettier": "^2.7.1",
+    "puppeteer": "^15.3.0",
+    "rehype-stringify": "^9.0.3",
+    "remark-gfm": "^3.0.1",
+    "remark-parse": "^10.0.1",
+    "remark-rehype": "^10.1.0",
+    "to-vfile": "^7.2.3",
+    "unified": "^10.1.2",
+    "uws": "github:uNetworking/uWebSockets.js#v20.10.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.14.50"
+  }
+}

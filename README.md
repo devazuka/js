@@ -6,7 +6,7 @@ A starter pack of JS exercises
 
 ### In a web browser
 
-Go to [nan-academy.github.io/starter](https://nan-academy.github.io/starter)
+Go to [js.devazuka.com](https://js.devazuka.com)
 
 ### Using Deno
 
