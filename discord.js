@@ -27,7 +27,6 @@ setInterval(() => {
 }, 60000)
 
 const discord = method => async (path, { user, ...opts } = {}) => {
-  opts.method = method
   const headers = opts.headers || (opts.headers = {})
   headers['content-type'] || (headers['content-type'] = 'application/json')
   if (user) {
@@ -38,15 +37,16 @@ const discord = method => async (path, { user, ...opts } = {}) => {
   } else if (!headers.authorization) {
     headers.authorization = `Bot ${BOT_TOKEN}`
   }
+  opts.method = method
   const res = await fetch(`${DISCORD_API}/${path}`, opts)
   const { status } = res
   try {
     if (status === 204) return
     const result = await res.json()
-    if (result.error) throw new R(result.error_description, { status })
+    if (result.error) throw new R(result.error_description || result.error, { status })
     return result
   } catch (err) {
-    throw new R(res.statusText, { status })
+    throw new R(null, { status })
   }
 }
 
@@ -103,13 +103,14 @@ export const GET_auth_discord = async ({ params }) => {
   // Link open when redirected from discord OAuth
   const code = params.get('code')
   const state = params.get('state')
-  if (!code || !state) return new R('Missing Params', BAD_REQUEST)
+  if (!code) return new R('Missing Code Param', BAD_REQUEST)
+  if (!state) return new R('Missing State Param', BAD_REQUEST)
 
   // We check that the OAuth request state exist and has not expired
   if (!oauthStates.has(state)) return new R('Bad State', UNAUTHORIZED)
 
   // If it's the first time we have to create the user
-  const { login, session, level } = getOrCreateUser(code)
+  const { login, session, level } = await getOrCreateUser(code)
 
   // Redirect to the connected app while setting the secure auth cookie
   return new R(null, {
