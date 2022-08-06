@@ -96,6 +96,8 @@ const getOrCreateUser = async code => {
 
   // join discord server
   await discord.PUT(`guilds/${GUILD}/members/${user.id}`, { user })
+
+  return user
 }
 
 // GET /auth/discord
