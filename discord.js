@@ -1,4 +1,4 @@
-import { METHODS } from 'http'
+import { METHODS } from 'node:http'
 import { User } from './data.js'
 import { DOMAIN, DISCORD_SECRET, BOT_TOKEN } from './env.js'
 

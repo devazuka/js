@@ -1,3 +1,4 @@
+import { STATUS_CODES } from 'node:http'
 import { readFileSync } from 'node:fs'
 import uWS from 'uws'
 import { isDev, port } from './env.js'
@@ -9,35 +10,38 @@ import {
   // rand
 } from './discord.js'
 
+const EMPTY = new Uint8Array()
 const clients = new Map()
-const getMime = ext => {
-  switch (ext) {
-    case 'js': return 'text/javascript; charset=utf-8'
-    case 'css': return 'text/css; charset=utf-8'
-    case 'html': return 'text/html; charset=utf-8'
-    case 'json': return 'application/json; charset=utf-8'
-    // image/gif, image/png, image/jpeg, image/bmp, image/webp
-    // audio/midi, audio/mpeg, audio/webm, audio/ogg, audio/wav
-    default: return 'application/octet-stream'
-  }
+const toBuf = utf8 => new Uint8Array(Buffer.from(utf8))
+const sessionHeader = toBuf('devazuka-session')
+const defaultMime = toBuf('application/octet-stream')
+const contentType = toBuf('Content-Type')
+const statues = Object.fromEntries(
+  Object.entries(STATUS_CODES).map(([k, v]) => toBuf(`${k} ${v}`))
+)
+const mimes = {
+  js: toBuf('text/javascript; charset=utf-8'),
+  css: toBuf('text/css; charset=utf-8'),
+  html: toBuf('text/html; charset=utf-8'),
+  json: toBuf('application/json; charset=utf-8'),
 }
+// image/gif, image/png, image/jpeg, image/bmp, image/webp
+// audio/midi, audio/mpeg, audio/webm, audio/ogg, audio/wav
+
 const serveStatic = fileName => {
-  const mime = getMime(fileName.split('.').at(-1))
+  const mime = mimes[fileName.split('.').at(-1)] || defaultMime
   if (isDev) return res => {
-    res.writeHeader("Content-Type", mime)
+    res.writeHeader(contentType, mime)
     res.end(readFileSync(fileName))
   }
   const content = readFileSync(fileName)
   return res => {
-    res.writeHeader("Content-Type", mime)
+    res.writeHeader(contentType, mime)
     res.end(content)
   }
 }
 
 const sendResponse = (res, response) => {
-  for (const [k, v] of response.headers) res.writeHeader(k, v)
-  res.writeStatus(response.status)
-  res.end(response.body)
 }
 
 const errToResponse = err => {
@@ -51,9 +55,12 @@ const handle = action => async (res, req) => {
   res.onAborted(() => controller.abort())
   const { signal } = controller
   const url = req.getUrl()
-  const session = req.getHeader('devazuka-session')
+  const session = req.getHeader(sessionHeader)
   const response = await action({ url, session, signal }).catch(errToResponse)
-  signal.aborted || sendResponse(res, response)
+  if (signal.aborted) return
+  for (const [k, v] of response.headers) res.writeHeader(k, v)
+  res.writeStatus(statues[response.status])
+  res.end(response.body || EMPTY)
 }
 
 const decode = TextDecoder.prototype.decode.bind(new TextDecoder)
@@ -64,7 +71,7 @@ const server = uWS.App()
   // idleTimeout: 12,
   upgrade: (res, req, context) => {
     const url = req.getUrl()
-    const session = req.getHeader('devazuka-session')
+    const session = req.getHeader(sessionHeader)
     console.log('An Http connection wants to become WebSocket, URL:', url)
     console.log(req.getHeader('sec-websocket-protocol'))
     console.log('devazuka-session', session)
