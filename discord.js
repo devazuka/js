@@ -22,11 +22,12 @@ const oauthStates = new Map()
 setInterval(() => {
   const now = Date.now()
   for (const [state, expireAt] of oauthStates) {
-    expireAt > now && oauthStates.delete(state)
+    expireAt < now && oauthStates.delete(state)
   }
 }, 60000)
 
 const discord = method => async (path, { user, ...opts } = {}) => {
+  opts.method = method
   const headers = opts.headers || (opts.headers = {})
   headers['content-type'] || (headers['content-type'] = 'application/json')
   if (user) {
@@ -112,7 +113,7 @@ export const GET_auth_discord = async ({ params }) => {
 
   // Redirect to the connected app while setting the secure auth cookie
   return new R(null, {
-    status: 301,
+    status: 302,
     headers: {
       location: `/?${new URLSearchParams({ login, level })}`,
       'set-cookie': [
@@ -145,7 +146,7 @@ export const GET_link_discord = async ({ session }) => {
     scope: 'identify email guilds.join',
     state,
   })}`
-  return new R(null, { headers: { location }, status: 301 })
+  return new R(null, { headers: { location }, status: 302 })
 }
 
 // GET /logout
@@ -157,7 +158,7 @@ export const GET_logout = async ({ session }) => {
   // Clear cookie
   const cookie = `devazuka-session=; path=/; domain=${DOMAIN}; max-age=-1`
   return new R(null, {
-    status: 301,
+    status: 302,
     headers: { location: '/', 'set-cookie': cookie },
   })
 }
