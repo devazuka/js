@@ -51,7 +51,7 @@ const discord = method => async (path, { user, ...opts } = {}) => {
 
 METHODS.forEach(method => discord[method] = discord(method))
 
-const getOrCreateUser = async () => {
+const getOrCreateUser = async code => {
   // authResponse return `expire_in` but it's a relative value
   // Saving the date of the request to convert to an absolute value
   const now = Date.now()
@@ -108,7 +108,7 @@ export const GET_auth_discord = async ({ params }) => {
   if (!oauthStates.has(state)) return new R('Bad State', UNAUTHORIZED)
 
   // If it's the first time we have to create the user
-  const { login, session, level } = getOrCreateUser()
+  const { login, session, level } = getOrCreateUser(code)
 
   // Redirect to the connected app while setting the secure auth cookie
   return new R(null, {
