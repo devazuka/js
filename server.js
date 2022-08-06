@@ -9,13 +9,13 @@ import {
 } from './discord.js'
 
 const clients = new Map()
-const port = process.env.PORT || 9001
+const port = Number(process.env.PORT) || 9001
 const getMime = ext => {
   switch (ext) {
     case 'js': return 'text/javascript; charset=utf-8'
-    case 'json': return 'application/json; charset=utf-8'
     case 'css': return 'text/css; charset=utf-8'
     case 'html': return 'text/html; charset=utf-8'
+    case 'json': return 'application/json; charset=utf-8'
     // image/gif, image/png, image/jpeg, image/bmp, image/webp
     // audio/midi, audio/mpeg, audio/webm, audio/ogg, audio/wav
     default: return 'application/octet-stream'
