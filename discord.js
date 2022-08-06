@@ -98,10 +98,10 @@ const getOrCreateUser = async () => {
 }
 
 // GET /auth/discord
-export const GET_auth_discord = async ({ url }) => {
+export const GET_auth_discord = async ({ params }) => {
   // Link open when redirected from discord OAuth
-  const code = url.searchParams.get('code')
-  const state = url.searchParams.get('state')
+  const code = params.get('code')
+  const state = params.get('state')
   if (!code || !state) return new R('Missing Params', BAD_REQUEST)
 
   // We check that the OAuth request state exist and has not expired

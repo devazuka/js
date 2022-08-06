@@ -51,8 +51,9 @@ const handle = action => async (res, req) => {
   res.onAborted(() => controller.abort())
   const { signal } = controller
   const url = req.getUrl()
+  const params = new URLSearchParams(req.getQuery())
   const session = req.getHeader(sessionHeader)
-  const response = await action({ url, session, signal }).catch(errToResponse)
+  const response = await action({ url, params, session, signal }).catch(errToResponse)
   if (signal.aborted) return
   res.writeStatus(response.status)
   for (const [k, v] of response.headers) res.writeHeader(k, v)
