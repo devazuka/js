@@ -15,6 +15,7 @@ export const rand = () =>
 
 const GUILD = '957694647084400761'
 const DISCORD_CLIENT = '826974634069983282'
+const DISCORD_API = 'https://discordapp.com/api'
 const oauthStates = new Map()
 
 // purge oauthStates every minutes
@@ -36,7 +37,7 @@ const discord = method => async (path, { user, ...opts } = {}) => {
   } else if (!headers.authorization) {
     headers.authorization = `Bot ${BOT_TOKEN}`
   }
-  const res = await fetch(`https://discordapp.com/api/${path}`, opts)
+  const res = await fetch(`${DISCORD_API}/${path}`, opts)
   const { status } = res
   try {
     if (status === 204) return
@@ -138,7 +139,7 @@ export const GET_link_discord = async ({ session }) => {
   oauthStates.set(state, Date.now() + 60000 * 15)
 
   // Redirect to discord OAuth authorize link
-  const location = `https://discordapp.com/api/oauth2/authorize?${new URLSearchParams({
+  const location = `${DISCORD_API}/oauth2/authorize?${new URLSearchParams({
     client_id: DISCORD_CLIENT,
     response_type: 'code',
     scope: 'identify email guilds.join',

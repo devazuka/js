@@ -8,10 +8,11 @@ const statuses = Object.fromEntries(
   Object.entries(STATUS_CODES).map(([k, v]) => [k, toBuf(`${k} ${v}`)])
 )
 
+const EMPTY = new Uint8Array()
 export class R {
   constructor(body, { status, headers }) {
-    this.body = body
-    this.status = statuses[status]
-    this.headers = Object.entries(headers).map(toHeader)
+    this.body = body || EMPTY
+    this.status = statuses[status || (body ? 200 : 204)]
+    this.headers = headers ? Object.entries(headers).map(toHeader) : EMPTY
   }
 }

@@ -10,7 +10,6 @@ import {
   // rand
 } from './discord.js'
 
-const EMPTY = new Uint8Array()
 const clients = new Map()
 const toBuf = utf8 => new Uint8Array(Buffer.from(utf8))
 const sessionHeader = toBuf('devazuka-session')
@@ -57,7 +56,7 @@ const handle = action => async (res, req) => {
   if (signal.aborted) return
   res.writeStatus(response.status)
   for (const [k, v] of response.headers) res.writeHeader(k, v)
-  res.end(response.body || EMPTY)
+  res.end(response.body)
 }
 
 const decode = TextDecoder.prototype.decode.bind(new TextDecoder)
