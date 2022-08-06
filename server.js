@@ -1,6 +1,6 @@
-import { STATUS_CODES } from 'node:http'
 import { readFileSync } from 'node:fs'
 import uWS from 'uws'
+import { R } from './response.js'
 import { isDev, port } from './env.js'
 import {
   GET_auth_discord,
@@ -16,9 +16,6 @@ const toBuf = utf8 => new Uint8Array(Buffer.from(utf8))
 const sessionHeader = toBuf('devazuka-session')
 const defaultMime = toBuf('application/octet-stream')
 const contentType = toBuf('Content-Type')
-const statues = Object.fromEntries(
-  Object.entries(STATUS_CODES).map(([k, v]) => toBuf(`${k} ${v}`))
-)
 const mimes = {
   js: toBuf('text/javascript; charset=utf-8'),
   css: toBuf('text/css; charset=utf-8'),
@@ -45,9 +42,9 @@ const sendResponse = (res, response) => {
 }
 
 const errToResponse = err => {
-  if (err instanceof Response) return err
+  if (err instanceof R) return err
   console.log(err.stack)
-  return new Response(err.message, { status: 500 })
+  return new R(err.message, { status: 500 })
 }
 
 const handle = action => async (res, req) => {
@@ -58,8 +55,8 @@ const handle = action => async (res, req) => {
   const session = req.getHeader(sessionHeader)
   const response = await action({ url, session, signal }).catch(errToResponse)
   if (signal.aborted) return
+  res.writeStatus(response.status)
   for (const [k, v] of response.headers) res.writeHeader(k, v)
-  res.writeStatus(statues[response.status])
   res.end(response.body || EMPTY)
 }
 

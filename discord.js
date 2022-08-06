@@ -1,5 +1,6 @@
 import { METHODS } from 'node:http'
 import { User } from './data.js'
+import { R } from './response.js'
 import { DOMAIN, DISCORD_SECRET, BOT_TOKEN } from './env.js'
 
 // const SUCCESS = { status: 200, statusText: 'OK' }
@@ -36,13 +37,14 @@ const discord = method => async (path, { user, ...opts } = {}) => {
     headers.authorization = `Bot ${BOT_TOKEN}`
   }
   const res = await fetch(`https://discordapp.com/api/${path}`, opts)
+  const { status } = res
   try {
-    if (res.status === 204) return
+    if (status === 204) return
     const result = await res.json()
-    if (result.error) throw new Response(result.error_description, res.status)
+    if (result.error) throw new R(result.error_description, { status })
     return result
   } catch (err) {
-    throw new Response(res.statusText, res.status)
+    throw new R(res.statusText, { status })
   }
 }
 
@@ -99,16 +101,16 @@ export const GET_auth_discord = async ({ url }) => {
   // Link open when redirected from discord OAuth
   const code = url.searchParams.get('code')
   const state = url.searchParams.get('state')
-  if (!code || !state) return new Response('Missing Params', BAD_REQUEST)
+  if (!code || !state) return new R('Missing Params', BAD_REQUEST)
 
   // We check that the OAuth request state exist and has not expired
-  if (!oauthStates.has(state)) return new Response('Bad State', UNAUTHORIZED)
+  if (!oauthStates.has(state)) return new R('Bad State', UNAUTHORIZED)
 
   // If it's the first time we have to create the user
   const { login, session, level } = getOrCreateUser()
 
   // Redirect to the connected app while setting the secure auth cookie
-  return new Response(null, {
+  return new R(null, {
     status: 301,
     headers: {
       location: `/?${new URLSearchParams({ login, level })}`,
@@ -142,7 +144,7 @@ export const GET_link_discord = async ({ session }) => {
     scope: 'identify email guilds.join',
     state,
   })}`
-  return new Response(null, { headers: { location }, status: 301 })
+  return new R(null, { headers: { location }, status: 301 })
 }
 
 // GET /logout
@@ -153,7 +155,7 @@ export const GET_logout = async ({ session }) => {
 
   // Clear cookie
   const cookie = `devazuka-session=; path=/; domain=${DOMAIN}; max-age=-1`
-  return new Response(null, {
+  return new R(null, {
     status: 301,
     headers: { location: '/', 'set-cookie': cookie },
   })
@@ -175,7 +177,7 @@ const jsRolesById = Object.fromEntries(jsRoleList.map(role => [role.id, role]))
 
 export const grantJSRole = async (user, level) => {
   const role = jsRolesByLevel[level]
-  if (!role) throw new Response('Invalid JS level', BAD_REQUEST)
+  if (!role) throw new R('Invalid JS level', BAD_REQUEST)
   const member = await discord.GET(`guilds/${GUILD}/members/${user.id}`, { user })
   // find the currently highest js role
   const [highest] = member.roles
