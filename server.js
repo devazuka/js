@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import uWS from 'uws'
+import { isDev, port } from './env.js'
 import {
   GET_auth_discord,
   GET_link_discord,
@@ -9,7 +10,6 @@ import {
 } from './discord.js'
 
 const clients = new Map()
-const port = Number(process.env.PORT) || 9001
 const getMime = ext => {
   switch (ext) {
     case 'js': return 'text/javascript; charset=utf-8'
@@ -23,7 +23,7 @@ const getMime = ext => {
 }
 const serveStatic = fileName => {
   const mime = getMime(fileName.split('.').at(-1))
-  if (process.env.NODE_ENV === 'development') return res => {
+  if (isDev) return res => {
     res.writeHeader("Content-Type", mime)
     res.end(readFileSync(fileName))
   }
@@ -32,6 +32,28 @@ const serveStatic = fileName => {
     res.writeHeader("Content-Type", mime)
     res.end(content)
   }
+}
+
+const sendResponse = (res, response) => {
+  for (const [k, v] of response.headers) res.writeHeader(k, v)
+  res.writeStatus(response.status)
+  res.end(response.body)
+}
+
+const errToResponse = err => {
+  if (err instanceof Response) return err
+  console.log(err.stack)
+  return new Response(err.message, { status: 500 })
+}
+
+const handle = action => async (res, req) => {
+  const controller = new AbortController
+  res.onAborted(() => controller.abort())
+  const { signal } = controller
+  const url = req.getUrl()
+  const session = req.getHeader('devazuka-session')
+  const response = await action({ url, session, signal }).catch(errToResponse)
+  signal.aborted || sendResponse(res, response)
 }
 
 const decode = TextDecoder.prototype.decode.bind(new TextDecoder)
@@ -72,9 +94,9 @@ const server = uWS.App()
     console.log(ws.id, 'WebSocket closed')
   },
 })
-.get('/auth/discord', GET_auth_discord)
-.get('/link/discord', GET_link_discord)
-.get('/logout', GET_logout)
+.get('/auth/discord', handle(GET_auth_discord))
+.get('/link/discord', handle(GET_link_discord))
+.get('/logout', handle(GET_logout))
 .get('/lib/style.css', serveStatic('./lib/style.css'))
 .get('/lib/script.js', serveStatic('./lib/script.js'))
 .get('/*', serveStatic('./index.html'))

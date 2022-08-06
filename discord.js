@@ -1,5 +1,6 @@
 import { METHODS } from 'http'
 import { User } from './data.js'
+import { DOMAIN, DISCORD_SECRET, BOT_TOKEN } from './env.js'
 
 // const SUCCESS = { status: 200, statusText: 'OK' }
 // const NOT_FOUND = { status: 404, statusText: 'Not Found' }
@@ -13,9 +14,6 @@ export const rand = () =>
 
 const GUILD = '957694647084400761'
 const DISCORD_CLIENT = '826974634069983282'
-const DISCORD_SECRET = process.env.JANUS_SECRET
-const BOT_TOKEN = process.env.JANUS_TOKEN
-
 const oauthStates = new Map()
 
 // purge oauthStates every minutes
@@ -118,7 +116,7 @@ export const GET_auth_discord = async ({ url }) => {
         `devazuka-session=${session}`,
         'max-age=31536000',
         'path=/',
-        `domain=${url.hostname}`,
+        `domain=${DOMAIN}`,
         'httponly',
         'samesite=strict',
         'secure',
@@ -148,13 +146,13 @@ export const GET_link_discord = async ({ session }) => {
 }
 
 // GET /logout
-export const GET_logout = async ({ session, url: { hostname } }) => {
+export const GET_logout = async ({ session }) => {
   // Clear Session
   const user = User.find.session(session)
   user?.update({ session: undefined })
 
   // Clear cookie
-  const cookie = `devazuka-session=; path=/; domain=${hostname}; max-age=-1`
+  const cookie = `devazuka-session=; path=/; domain=${DOMAIN}; max-age=-1`
   return new Response(null, {
     status: 301,
     headers: { location: '/', 'set-cookie': cookie },
