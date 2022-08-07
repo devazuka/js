@@ -12,9 +12,12 @@ import {
 
 const clients = new Map()
 const toBuf = utf8 => new Uint8Array(Buffer.from(utf8))
-const sessionHeader = toBuf('devazuka-session')
 const defaultMime = toBuf('application/octet-stream')
-const contentType = toBuf('Content-Type')
+const COOKIE_HEADER = toBuf('cookie')
+const CONTENT_TYPE = toBuf('Content-Type')
+const SEC_WEBSOCKET_KEY = toBuf('sec-websocket-key')
+const SEC_WEBSOCKET_PROTOCOL = toBuf('sec-websocket-protocol')
+const SEC_WEBSOCKET_EXTENSIONS = toBuf('sec-websocket-extensions')
 const mimes = {
   js: toBuf('text/javascript; charset=utf-8'),
   css: toBuf('text/css; charset=utf-8'),
@@ -27,12 +30,12 @@ const mimes = {
 const serveStatic = fileName => {
   const mime = mimes[fileName.split('.').at(-1)] || defaultMime
   if (isDev) return res => {
-    res.writeHeader(contentType, mime)
+    res.writeHeader(CONTENT_TYPE, mime)
     res.end(readFileSync(fileName))
   }
   const content = readFileSync(fileName)
   return res => {
-    res.writeHeader(contentType, mime)
+    res.writeHeader(CONTENT_TYPE, mime)
     res.end(content)
   }
 }
@@ -43,13 +46,22 @@ const errToResponse = err => {
   return new R(err.message, { status: 500 })
 }
 
+const getSession = req => {
+  const cookieStr = req.getHeader(COOKIE_HEADER)
+  if (!cookieStr) return
+  const x = cookieStr.indexOf(`devazuka-session=`)
+  if (x < 0) return
+  const y = cookieStr.indexOf('; ', x)
+  return cookieStr.slice(x + 17, y < x ? cookieStr.length : y)
+}
+
 const handle = action => async (res, req) => {
   const controller = new AbortController
   res.onAborted(() => controller.abort())
   const { signal } = controller
   const url = req.getUrl()
   const params = new URLSearchParams(req.getQuery())
-  const session = req.getHeader(sessionHeader)
+  const session = getSession(req)
   const response = await action({ url, params, session, signal }).catch(errToResponse)
   if (signal.aborted) return
   res.writeStatus(response.status)
@@ -65,19 +77,18 @@ const server = uWS.App()
   // idleTimeout: 12,
   upgrade: (res, req, context) => {
     const url = req.getUrl()
-    const session = req.getHeader(sessionHeader)
+    const session = getSession(req)
+
     console.log('An Http connection wants to become WebSocket, URL:', url)
     console.log(req.getHeader('sec-websocket-protocol'))
     console.log('devazuka-session', session)
 
-    req.forEach((k, v) => console.log({ k, v }))
-
     res.upgrade(
       { url, session },
       /* Spell these correctly */
-      req.getHeader('sec-websocket-key'),
-      req.getHeader('sec-websocket-protocol'),
-      req.getHeader('sec-websocket-extensions'),
+      req.getHeader(SEC_WEBSOCKET_KEY),
+      req.getHeader(SEC_WEBSOCKET_PROTOCOL),
+      req.getHeader(SEC_WEBSOCKET_EXTENSIONS),
       context,
     )
   },
