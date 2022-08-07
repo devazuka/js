@@ -10,6 +10,9 @@ export const User = defineEntity('user', {
   expireAt: Date,
   refresh: String,
 
+  // authentication
+  session: String,
+
   // current level
   level: Number,
 })
