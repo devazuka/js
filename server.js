@@ -37,9 +37,6 @@ const serveStatic = fileName => {
   }
 }
 
-const sendResponse = (res, response) => {
-}
-
 const errToResponse = err => {
   if (err instanceof R) return err
   console.log(err.stack)
@@ -73,6 +70,7 @@ const server = uWS.App()
     console.log(req.getHeader('sec-websocket-protocol'))
     console.log('devazuka-session', session)
 
+    req.forEach((k, v) => console.log({ k, v }))
 
     res.upgrade(
       { url, session },
